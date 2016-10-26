@@ -9,6 +9,7 @@ import static io.cb.java.injection.Agent.DEBUG;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ import java.util.logging.Logger;
 public class Context {
 
 	private static final List<Pojos> pojos = new ArrayList<>();
-	private static final ConcurrentHashMap<String,Object> singletonMap = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<String, Object> singletonMap = new ConcurrentHashMap<>();
 
 	public static <T> T getSingleton(String id) throws PojoException {
 		return getResource(id, true);
@@ -51,8 +52,8 @@ public class Context {
 	}
 
 	private static <T> T getResource(Pojo pojo, Class<T> classe, boolean singleton) throws PojoException {
-		if(singleton && singletonMap.containsKey(pojo.getId())){
-			return (T)singletonMap.get(pojo.getId());
+		if (singleton && singletonMap.containsKey(pojo.getId())) {
+			return (T) singletonMap.get(pojo.getId());
 		}
 		try {
 			T instance = classe.newInstance();
@@ -93,7 +94,7 @@ public class Context {
 					}
 				}
 			}
-			if(singleton){
+			if (singleton) {
 				singletonMap.putIfAbsent(pojo.getId(), instance);
 			}
 			return instance;
@@ -105,19 +106,26 @@ public class Context {
 	private Context() {
 	}
 
-	public static void loadResource(String... xml) {
+	public static boolean loadResource(String... xml) {
+		boolean loaded = false;
 		for (String s : xml) {
 			File file = new File(s);
 			if (file.exists()) {
 				try {
 					pojos.add(Pojos.loadXml(new FileInputStream(file)));
+					loaded = true;
 				} catch (FileNotFoundException ex) {
 					Logger.getLogger(Context.class.getName()).log(Level.SEVERE, null, ex);
 				}
 			} else {
-				pojos.add(Pojos.loadXml(ClassLoader.getSystemResourceAsStream(s)));
+				InputStream is;
+				if ((is = ClassLoader.getSystemResourceAsStream(s)) != null) {
+					pojos.add(Pojos.loadXml(ClassLoader.getSystemResourceAsStream(s)));
+					loaded = true;
+				}
 			}
 		}
+		return loaded;
 	}
 
 }
