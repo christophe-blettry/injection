@@ -47,7 +47,7 @@ public class Context {
 			}
 			return (T) getResource(pojo, classe, singleton);
 		} catch (ClassNotFoundException ex) {
-			throw new PojoException();
+			throw new PojoException(ex);
 		}
 	}
 
