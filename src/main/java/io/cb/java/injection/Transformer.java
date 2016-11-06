@@ -14,7 +14,9 @@ import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javassist.CannotCompileException;
@@ -31,6 +33,7 @@ import javassist.NotFoundException;
 public class Transformer implements ClassFileTransformer {
 
 	public static final HashMap<String, byte[]> transformMap = new HashMap<>();
+	public static final List<String> ignoredPackages = Arrays.asList("javax/", "java/", "sun/", "com/sun/");
 
 	private final String agentArguments;
 
@@ -44,8 +47,18 @@ public class Transformer implements ClassFileTransformer {
 		}
 	}
 
+	private boolean skipClass(String className) {
+		if (ignoredPackages.stream().anyMatch((name) -> (className.startsWith(name)))) {
+			return true;
+		}
+		return false;
+	}
+
 	@Override
 	public byte[] transform(ClassLoader loader, String fullyQualifiedClassName, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+		if (skipClass(fullyQualifiedClassName)) {
+			return null;
+		}
 		CtClass ctClass = null;
 		byte[] byteCode = null;
 		try {
@@ -58,11 +71,11 @@ public class Transformer implements ClassFileTransformer {
 			ctClass = ClassPool.getDefault().get(className);
 			CtField[] ctFields = ctClass.getDeclaredFields();
 			for (CtField ctField : ctFields) {
-				if (! (ctField.hasAnnotation(Inject.class) || ctField.hasAnnotation(Singleton.class))) {
+				if (!(ctField.hasAnnotation(Inject.class) || ctField.hasAnnotation(Singleton.class))) {
 					continue;
 				}
-				if (ctField.hasAnnotation(Singleton.class)){
-					singleton = true;	
+				if (ctField.hasAnnotation(Singleton.class)) {
+					singleton = true;
 				}
 				String name = ctField.getName();
 				if (DEBUG) {
@@ -80,8 +93,8 @@ public class Transformer implements ClassFileTransformer {
 					System.out.println(this.getClass().getName() + ".transform: constructors: " + constructors.length);
 				}
 				for (CtConstructor constructor : constructors) {
-					String line = "this." + ctField.getName() + "= (" + ctField.getType().getName() + 
-							")"+Context.class.getName()+"."+(singleton ? "getSingleton":"getResource")+"(\"" + name + "\");";
+					String line = "this." + ctField.getName() + "= (" + ctField.getType().getName()
+							+ ")" + Context.class.getName() + "." + (singleton ? "getSingleton" : "getResource") + "(\"" + name + "\");";
 					if (DEBUG) {
 						System.out.println(this.getClass().getName() + ".transform: code line: " + line);
 					}
@@ -104,7 +117,9 @@ public class Transformer implements ClassFileTransformer {
 				}
 			}
 		} catch (NotFoundException | ClassNotFoundException | IOException ex) {
-			System.err.println(ex);
+			if (DEBUG) {
+				System.err.println(ex);
+			}
 		} finally {
 			if (ctClass != null) {
 				ctClass.detach();
