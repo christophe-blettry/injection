@@ -11,6 +11,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,14 +30,23 @@ public class Context {
 	private static final ConcurrentHashMap<String, Object> singletonMap = new ConcurrentHashMap<>();
 
 	public static <T> T getSingleton(String id) throws PojoException {
+		if (DEBUG) {
+			System.out.println(Context.class.getName() + ".getSingleton: id:" + id);
+		}
 		return getResource(id, true);
 	}
 
 	public static <T> T getResource(String id) throws PojoException {
+		if (DEBUG) {
+			System.out.println(Context.class.getName() + ".getResource: id:" + id);
+		}
 		return getResource(id, false);
 	}
 
 	public static <T> T getResource(String id, boolean singleton) throws PojoException {
+		if (DEBUG) {
+			System.out.println(Context.class.getName() + ".getResource: id:" + id + ", singleton: " + singleton);
+		}
 		try {
 			Pojo pojo = pojos.stream().filter(p -> p.getPojoById(id) != null).map(p -> p.getPojoById(id)).findFirst().orElseThrow(() -> new PojoNotFoundException(id));
 			if (DEBUG) {
@@ -55,16 +66,50 @@ public class Context {
 		if (singleton && singletonMap.containsKey(pojo.getId())) {
 			return (T) singletonMap.get(pojo.getId());
 		}
+		if (DEBUG) {
+			System.out.println(Context.class.getName() + ".getResource: classe: " + classe + ", singleton :" + singleton);
+		}
 		try {
 			T instance = classe.newInstance();
 			for (Property p : pojo.getProperties()) {
 				Field f = classe.getDeclaredField(p.getName());
-				//si privé on force l'accessibilité
+				if (DEBUG) {
+					System.out.println(Context.class.getName() + ".getResource: field: " + f.getName() + ", type :" + f.getType());
+					System.out.println(Context.class.getName() + ".getResource: setter: " + getSetterName(f.getName()));
+				}
 				f.setAccessible(true);
+				/*
 				if (p.getRef() != null) {
-					f.set(instance, getResource(p.getRef()));
+						f.set(instance, getResource(p.getRef()));
+						continue;
+				}*/
+
+				if (p.getRef() != null) {
+					if (DEBUG) {
+						System.out.println(Context.class.getName() + ".getResource: property ref " + p.getRef());
+					}
+					try {
+						Method m = classe.getDeclaredMethod(getSetterName(f.getName()), f.getType());
+						if (DEBUG) {
+							System.out.println(Context.class.getName() + ".getResource: method for " + getSetterName(f.getName()) + " exist");
+						}
+						Object o = getResource(p.getRef()); 
+						if (DEBUG) {
+							System.out.println(Context.class.getName() + ".getResource: invoke with " + o);
+						}
+						m.invoke(instance, o);
+						if (DEBUG) {
+							System.out.println(Context.class.getName() + ".getResource: invoke for " + getSetterName(f.getName()) + " done");
+						}
+					} catch (Exception ex) {
+						if (DEBUG) {
+							System.out.println(Context.class.getName() + ".getResource: invoke for " + f.getName() + " failed :" + ex);
+						}
+						f.set(instance, getResource(p.getRef()));
+					}
 					continue;
 				}
+				//si privé on force l'accessibilité
 				Type type = f.getType();
 				if (type.equals(String.class)) {
 					f.set(instance, p.getValue());
@@ -97,8 +142,14 @@ public class Context {
 			if (singleton) {
 				singletonMap.putIfAbsent(pojo.getId(), instance);
 			}
+			if (DEBUG) {
+				System.out.println(Context.class.getName() + ".getResource: return instance " + instance);
+			}
 			return instance;
 		} catch (NoSuchFieldException | SecurityException | InstantiationException | IllegalAccessException ex) {
+			if (DEBUG) {
+				System.err.println(Context.class.getName() + ".getResource: failed for class " + classe.getName());
+			}
 			throw new PojoException(ex);
 		}
 	}
@@ -126,6 +177,10 @@ public class Context {
 			}
 		}
 		return loaded;
+	}
+
+	private static String getSetterName(String fieldName) {
+		return "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
 	}
 
 }
