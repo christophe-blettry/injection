@@ -93,6 +93,11 @@ public class Transformer implements ClassFileTransformer {
 					System.out.println(this.getClass().getName() + ".transform: constructors: " + constructors.length);
 				}
 				for (CtConstructor constructor : constructors) {
+					if(singleton){
+						Context.getSingleton(name);
+					}else {
+						Context.getResource(name);
+					}
 					String line = "this." + ctField.getName() + "= (" + ctField.getType().getName()
 							+ ")" + Context.class.getName() + "." + (singleton ? "getSingleton" : "getResource") + "(\"" + name + "\");";
 					if (DEBUG) {
@@ -114,6 +119,10 @@ public class Transformer implements ClassFileTransformer {
 					byteCode = ctClass.toBytecode();
 				} catch (CannotCompileException ex) {
 					Logger.getLogger(Transformer.class.getName()).log(Level.SEVERE, null, ex);
+				}
+			}else {
+				if (DEBUG) {
+					System.out.println(this.getClass().getName() + ".transform: className: " + className+" not transformed");
 				}
 			}
 		} catch (NotFoundException | ClassNotFoundException | IOException ex) {
