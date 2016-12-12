@@ -14,12 +14,14 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  * @author christophe
  */
-@XmlRootElement(name="pojo")
+@XmlRootElement(name = "pojo")
 public class Pojo {
 
 	private String id;
 	private String classe;
+	private String importFile;
 	private List<Property> properties;
+	private List<Call> methods;
 
 	public Pojo() {
 	}
@@ -37,9 +39,18 @@ public class Pojo {
 		return classe;
 	}
 
-	@XmlAttribute(name="class")
+	@XmlAttribute(name = "class")
 	public void setClasse(String classe) {
 		this.classe = classe;
+	}
+
+	public String getImportFile() {
+		return importFile;
+	}
+
+	@XmlAttribute(name = "import")
+	public void setImportFile(String importFile) {
+		this.importFile = importFile;
 	}
 
 	public List<Property> getProperties() {
@@ -51,10 +62,17 @@ public class Pojo {
 		this.properties = properties;
 	}
 
-	@Override
-	public String toString() {
-		return "Pojo{" + "id=" + id + ", classe=" + classe + ", properties=" + properties + '}';
+	public List<Call> getMethods() {
+		return methods;
 	}
 
+	@XmlElement(name = "call")
+	public void setMethods(List<Call> methods) {
+		this.methods = methods;
+	}
 
+	@Override
+	public String toString() {
+		return "Pojo{" + "id=" + id + ", classe=" + classe + ", importFile=" + importFile + ", properties=" + properties + ", methods=" + methods + '}';
+	}
 }
