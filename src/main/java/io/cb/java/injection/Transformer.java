@@ -35,6 +35,8 @@ public class Transformer implements ClassFileTransformer {
 	public static final HashMap<String, byte[]> transformMap = new HashMap<>();
 	public static final List<String> ignoredPackages = Arrays.asList("javax/", "java/", "sun/", "com/sun/");
 
+	private Context context;
+
 	private final String agentArguments;
 
 	public Transformer(String agentArguments) {
@@ -45,6 +47,14 @@ public class Transformer implements ClassFileTransformer {
 		if (DEBUG) {
 			System.out.println(this.getClass().getName() + ".<init>: agentArguments" + this.agentArguments);
 		}
+	}
+
+	public Context getContext() {
+		return context;
+	}
+
+	public void setContext(Context context) {
+		this.context = context;
 	}
 
 	private boolean skipClass(String className) {
@@ -66,65 +76,8 @@ public class Transformer implements ClassFileTransformer {
 			if (DEBUG) {
 				System.out.println(this.getClass().getName() + ".transform: className: " + className);
 			}
-			boolean transform = false;
-			boolean singleton = false;
 			ctClass = ClassPool.getDefault().get(className);
-			CtField[] ctFields = ctClass.getDeclaredFields();
-			for (CtField ctField : ctFields) {
-				if (!(ctField.hasAnnotation(Inject.class) || ctField.hasAnnotation(Singleton.class))) {
-					continue;
-				}
-				if (ctField.hasAnnotation(Singleton.class)) {
-					singleton = true;
-				}
-				String name = ctField.getName();
-				if (DEBUG) {
-					System.out.println(this.getClass().getName() + ".transform: name: " + name);
-				}
-				if (ctField.hasAnnotation(Named.class)) {
-					Named n = (Named) ctField.getAnnotation(Named.class);
-					name = n.value();
-					if (DEBUG) {
-						System.out.println(this.getClass().getName() + ".transform: named: name: " + name);
-					}
-				}
-				CtConstructor[] constructors = ctClass.getDeclaredConstructors();
-				if (DEBUG) {
-					System.out.println(this.getClass().getName() + ".transform: constructors: " + constructors.length);
-				}
-				for (CtConstructor constructor : constructors) {
-					if(singleton){
-						Context.getSingleton(name);
-					}else {
-						Context.getResource(name);
-					}
-					String line = "this." + ctField.getName() + "= (" + ctField.getType().getName()
-							+ ")" + Context.class.getName() + "." + (singleton ? "getSingleton" : "getResource") + "(\"" + name + "\");";
-					if (DEBUG) {
-						System.out.println(this.getClass().getName() + ".transform: code line: " + line);
-					}
-					try {
-						constructor.insertAfter(line);
-					} catch (Exception ex) {
-						System.err.println("transform: CannotCompileException: " + ex);
-					}
-				}
-				transform = true;
-			}
-			if (transform) {
-				if (DEBUG) {
-					System.out.println(this.getClass().getName() + ".transform: transformed className: " + className);
-				}
-				try {
-					byteCode = ctClass.toBytecode();
-				} catch (CannotCompileException ex) {
-					Logger.getLogger(Transformer.class.getName()).log(Level.SEVERE, null, ex);
-				}
-			}else {
-				if (DEBUG) {
-					System.out.println(this.getClass().getName() + ".transform: className: " + className+" not transformed");
-				}
-			}
+			byteCode = transform(context,className, ctClass);
 		} catch (NotFoundException | ClassNotFoundException | IOException ex) {
 			if (DEBUG) {
 				System.err.println(ex);
@@ -135,6 +88,70 @@ public class Transformer implements ClassFileTransformer {
 			}
 		}
 		return byteCode;
+	}
+
+	private byte[] transform(Context _context, String className, CtClass ctClass) throws ClassNotFoundException, NotFoundException, IOException {
+		boolean transform = false;
+		boolean singleton = false;
+		byte[] byteCode = null;
+		CtField[] ctFields = ctClass.getDeclaredFields();
+		for (CtField ctField : ctFields) {
+			if (!(ctField.hasAnnotation(Inject.class) || ctField.hasAnnotation(Singleton.class))) {
+				continue;
+			}
+			if (ctField.hasAnnotation(Singleton.class)) {
+				singleton = true;
+			}
+			String name = ctField.getName();
+			if (DEBUG) {
+				System.out.println(this.getClass().getName() + ".transform: name: " + name);
+			}
+			if (ctField.hasAnnotation(Named.class)) {
+				Named n = (Named) ctField.getAnnotation(Named.class);
+				name = n.value();
+				if (DEBUG) {
+					System.out.println(this.getClass().getName() + ".transform: named: name: " + name);
+				}
+			}
+			CtConstructor[] constructors = ctClass.getDeclaredConstructors();
+			if (DEBUG) {
+				System.out.println(this.getClass().getName() + ".transform: constructors: " + constructors.length);
+			}
+			for (CtConstructor constructor : constructors) {
+				if (singleton) {
+					_context.getSingleton(name);
+				} else {
+					_context.getResource(name);
+				}
+				String line = "this." + ctField.getName() + "= (" + ctField.getType().getName()
+						+ ")" + _context.getClass().getName() + "." + (singleton ? "getSingleton" : "getResource") + "(\"" + name + "\");";
+				if (DEBUG) {
+					System.out.println(this.getClass().getName() + ".transform: code line: " + line);
+				}
+				try {
+					constructor.insertAfter(line);
+				} catch (Exception ex) {
+					System.err.println("transform: CannotCompileException: " + ex);
+				}
+			}
+			transform = true;
+		}
+		if (transform) {
+			if (DEBUG) {
+				System.out.println(this.getClass().getName() + ".transform: transformed className: " + className);
+			}
+			try {
+				byteCode = ctClass.toBytecode();
+			} catch (CannotCompileException ex) {
+				Logger.getLogger(Transformer.class.getName()).log(Level.SEVERE, null, ex);
+			}
+		} else {
+			if (DEBUG) {
+				System.out.println(this.getClass().getName() + ".transform: className: " + className + " not transformed");
+			}
+		}
+		return byteCode;
+
 	}
 
 }

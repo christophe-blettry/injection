@@ -27,27 +27,27 @@ import java.util.logging.Logger;
  */
 public class Context {
 
-	private static final List<Pojos> pojos = new ArrayList<>();
-	private static final ConcurrentHashMap<String, Object> singletonMap = new ConcurrentHashMap<>();
+	private final List<Pojos> pojos = new ArrayList<>();
+	private final ConcurrentHashMap<String, Object> singletonMap = new ConcurrentHashMap<>();
 
 	private Context() {
 	}
 
-	public static <T> T getSingleton(String id) throws PojoException {
+	public <T> T getSingleton(String id) throws PojoException {
 		if (DEBUG) {
 			System.out.println(Context.class.getName() + ".getSingleton: id:" + id);
 		}
 		return getResource(id, true);
 	}
 
-	public static <T> T getResource(String id) throws PojoException {
+	public <T> T getResource(String id) throws PojoException {
 		if (DEBUG) {
 			System.out.println(Context.class.getName() + ".getResource: id:" + id);
 		}
 		return getResource(id, false);
 	}
 
-	public static <T> T getResource(String id, boolean singleton) throws PojoException {
+	public <T> T getResource(String id, boolean singleton) throws PojoException {
 		if (DEBUG) {
 			System.out.println(Context.class.getName() + ".getResource: id:" + id + ", singleton: " + singleton);
 		}
@@ -66,7 +66,7 @@ public class Context {
 		}
 	}
 
-	private static <T> T getResource(Pojo pojo, Class<T> classe, boolean singleton) throws PojoException {
+	private <T> T getResource(Pojo pojo, Class<T> classe, boolean singleton) throws PojoException {
 		if (singleton && singletonMap.containsKey(pojo.getId())) {
 			return (T) singletonMap.get(pojo.getId());
 		}
@@ -115,7 +115,7 @@ public class Context {
 		}
 	}
 
-	private static <T> void loadMethod(Class<T> classe, Call call, T instance) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	private <T> void loadMethod(Class<T> classe, Call call, T instance) throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		Object o = null;
 		if (call.getRef() == null && (call.getValue() != null && call.getPrimitive() != null)) {
 			o = getPrimitiveValue(call.getValue(), call.getPrimitive());
@@ -136,7 +136,7 @@ public class Context {
 		}
 	}
 
-	private static Object getPrimitiveValue(String value, String primitive) {
+	private Object getPrimitiveValue(String value, String primitive) {
 		if (primitive.equalsIgnoreCase("String")) {
 			return value;
 		}
@@ -167,7 +167,7 @@ public class Context {
 		return null;
 	}
 
-	private static void loadProperty(Class classe, Property p, Object instance) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+	private void loadProperty(Class classe, Property p, Object instance) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
 		Field f = classe.getDeclaredField(p.getName());
 		if (DEBUG) {
 			System.out.println(Context.class.getName() + ".loadProperty: field: " + f.getName() + ", type :" + f.getType());
@@ -239,31 +239,29 @@ public class Context {
 		}
 	}
 
-	public static boolean loadResource(String... xml) {
-		boolean loaded = false;
+	public static Context loadResource(String... xml) {
+		Context context = new Context();
 		for (String s : xml) {
 			File file = new File(s);
 			if (file.exists()) {
 				try {
 					Pojos _pojos = Pojos.loadXml(new FileInputStream(file));
-					addPojo(_pojos);
-					loaded = true;
+					context.addPojo(_pojos);
 				} catch (FileNotFoundException ex) {
 					Logger.getLogger(Context.class.getName()).log(Level.SEVERE, null, ex);
 				}
 			} else {
 				InputStream is;
 				if ((is = ClassLoader.getSystemResourceAsStream(s)) != null) {
-					Pojos _pojos = Pojos.loadXml(ClassLoader.getSystemResourceAsStream(s));
-					addPojo(_pojos);
-					loaded = true;
+					Pojos _pojos = Pojos.loadXml(is);
+					context.addPojo(_pojos);
 				}
 			}
 		}
-		return loaded;
+		return context;
 	}
 
-	private static void addPojo(Pojos _pojos) {
+	private void addPojo(Pojos _pojos) {
 		for (Pojo _pojo : _pojos.getPojos()) {
 			if (_pojo.getImportFile() != null) {
 				loadResource(_pojo.getImportFile());
@@ -272,11 +270,11 @@ public class Context {
 		pojos.add(_pojos);
 	}
 
-	private static String getSetterName(String fieldName) {
+	private String getSetterName(String fieldName) {
 		return "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
 	}
 
-	public static void dump(PrintStream printer) {
+	public void dump(PrintStream printer) {
 		pojos.forEach(printer::println);
 	}
 

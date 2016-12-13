@@ -47,7 +47,7 @@ public class Pojos {
 			System.out.println(this.getClass().getName() + ".mapPojos: " + pojo.size());
 		}
 		if (pojo != null) {
-			mapById = pojo.stream().collect(Collectors.toMap(Pojo::getId, Function.identity()));
+			mapById = pojo.stream().filter(p -> p.getId()!=null).collect(Collectors.toMap(Pojo::getId, Function.identity()));
 		}
 		return this;
 	}

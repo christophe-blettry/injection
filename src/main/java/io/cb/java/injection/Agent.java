@@ -5,6 +5,7 @@
  */
 package io.cb.java.injection;
 
+import io.cb.java.injection.pojo.Context;
 import java.lang.instrument.Instrumentation;
 
 /**
@@ -28,7 +29,7 @@ public class Agent {
 		if(DEBUG) System.out.println(Agent.class.getName()+".premain");
 	}
 
-	public static void initialize(String agentArguments) {
+	public static void initialize(String agentArguments, Context context) {
 		if (instrumentation == null) {
 			InitInstrument.loadAgent(agentArguments);
 		}
