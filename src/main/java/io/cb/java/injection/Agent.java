@@ -16,10 +16,11 @@ public class Agent {
 
 	private static Instrumentation instrumentation;
 	public static boolean DEBUG = false;
+	private static Transformer transformer;
 
 	public static void agentmain(String agentArguments, Instrumentation instr) {
 		instrumentation = instr;
-		instrumentation.addTransformer(new Transformer(agentArguments));
+		instrumentation.addTransformer(transformer);
 		if(DEBUG) System.out.println(Agent.class.getName()+".agentmain");
 	}
 
@@ -31,7 +32,9 @@ public class Agent {
 
 	public static void initialize(String agentArguments, Context context) {
 		if (instrumentation == null) {
+			transformer=new Transformer(agentArguments);
 			InitInstrument.loadAgent(agentArguments);
+			transformer.setContext(context);
 		}
 	}
 }

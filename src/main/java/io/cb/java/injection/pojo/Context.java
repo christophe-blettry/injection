@@ -6,6 +6,7 @@
 package io.cb.java.injection.pojo;
 
 import static io.cb.java.injection.Agent.DEBUG;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -17,6 +18,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,8 +32,44 @@ public class Context {
 
 	private final List<Pojos> pojos = new ArrayList<>();
 	private final ConcurrentHashMap<String, Object> singletonMap = new ConcurrentHashMap<>();
+	private final String id;
+	private ClassLoader classLoader;
+	private static final ConcurrentHashMap<String, Context> allContexts = new ConcurrentHashMap<>();
+
+	public static Context getContext(String id) {
+		return allContexts.get(id);
+	}
+
+	public static void clear(Context context) {
+		//System.out.println(Context.class.getName() + ".clear: try to remove context:" + context.toString() );
+		if (context != null && context.getId() != null) {
+			//System.out.println(Context.class.getName() + ".clear: id:" + context.getId() );
+			allContexts.remove(context.getId());
+			context.singletonMap.clear();
+			context.pojos.clear();
+			context.setClassLoader(null);
+		}
+	}
 
 	private Context() {
+		id = UUID.randomUUID().toString();
+		allContexts.put(id, this);
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public ClassLoader getClassLoader() {
+		return classLoader;
+	}
+
+	public void setClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
+	}
+
+	private List<Pojos> getPojos() {
+		return pojos;
 	}
 
 	public <T> T getSingleton(String id) throws PojoException {
@@ -50,13 +89,15 @@ public class Context {
 	public <T> T getResource(String id, boolean singleton) throws PojoException {
 		if (DEBUG) {
 			System.out.println(Context.class.getName() + ".getResource: id:" + id + ", singleton: " + singleton);
+			System.out.println(Context.class.getName() + ".getResource: pojos:" + pojos.toString());
 		}
 		try {
 			Pojo pojo = pojos.stream().filter(p -> p.getPojoById(id) != null).map(p -> p.getPojoById(id)).findFirst().orElseThrow(() -> new PojoNotFoundException(id));
 			if (DEBUG) {
 				System.out.println(Context.class.getName() + ".getResource: pojo:" + pojo);
 			}
-			Class classe = Class.forName(pojo.getClasse());
+			Class classe = classLoader == null
+					? Class.forName(pojo.getClasse()) : Class.forName(pojo.getClasse(), true, classLoader);
 			if (DEBUG) {
 				System.out.println(Context.class.getName() + ".getResource: classe:" + classe.getName());
 			}
@@ -240,7 +281,33 @@ public class Context {
 	}
 
 	public static Context loadResource(String... xml) {
+		return loadResource(new Context(), xml);
+	}
+
+	public static Context loadResource(String key, Map<String, byte[]> map) {
 		Context context = new Context();
+		return loadResource(context, key, map);
+	}
+
+	private static Context loadResource(Context context, String key, Map<String, byte[]> map) {
+		if (!map.containsKey(key) || map.get(key) == null) {
+			return context;
+		}
+		Pojos _pojos = Pojos.loadXml(new ByteArrayInputStream(map.get(key)));
+		context.addPojo(_pojos, map);
+		return context;
+	}
+
+	private void addPojo(Pojos _pojos, Map<String, byte[]> map) {
+		for (Pojo _pojo : _pojos.getPojos()) {
+			if (_pojo.getImportFile() != null) {
+				loadResource(this, _pojo.getImportFile(), map);
+			}
+		}
+		pojos.add(_pojos);
+	}
+
+	private static Context loadResource(Context context, String... xml) {
 		for (String s : xml) {
 			File file = new File(s);
 			if (file.exists()) {
@@ -255,6 +322,8 @@ public class Context {
 				if ((is = ClassLoader.getSystemResourceAsStream(s)) != null) {
 					Pojos _pojos = Pojos.loadXml(is);
 					context.addPojo(_pojos);
+				} else {
+					System.err.println("can't locate " + s);
 				}
 			}
 		}
@@ -264,7 +333,7 @@ public class Context {
 	private void addPojo(Pojos _pojos) {
 		for (Pojo _pojo : _pojos.getPojos()) {
 			if (_pojo.getImportFile() != null) {
-				loadResource(_pojo.getImportFile());
+				loadResource(this, _pojo.getImportFile());
 			}
 		}
 		pojos.add(_pojos);
@@ -276,6 +345,11 @@ public class Context {
 
 	public void dump(PrintStream printer) {
 		pojos.forEach(printer::println);
+	}
+
+	@Override
+	public String toString() {
+		return "Context{" + "pojos=" + pojos + ", singletonMap=" + singletonMap + ", id=" + id + '}';
 	}
 
 }

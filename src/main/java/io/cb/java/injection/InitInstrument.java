@@ -20,37 +20,42 @@ import java.net.URLClassLoader;
  */
 public class InitInstrument {
 
-
 	public static void loadAgent(String agentArguments) {
-        String nameOfRunningVM = ManagementFactory.getRuntimeMXBean().getName();
-        int p = nameOfRunningVM.indexOf('@');
-        String pid = nameOfRunningVM.substring(0, p);
+		String nameOfRunningVM = ManagementFactory.getRuntimeMXBean().getName();
+		int p = nameOfRunningVM.indexOf('@');
+		String pid = nameOfRunningVM.substring(0, p);
 
-        try {
-			String jarFilePath = getInstrumentJar(); 	
-            VirtualMachine vm = VirtualMachine.attach(pid);
-            vm.loadAgent(jarFilePath, agentArguments);
-            vm.detach();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+		try {
+			String jarFilePath = getInstrumentJar();
+			VirtualMachine vm = VirtualMachine.attach(pid);
+			vm.loadAgent(jarFilePath, agentArguments);
+			vm.detach();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-	private static String getInstrumentJar() throws IOException{
+	private static String getInstrumentJar() throws IOException {
 		ClassLoader cl = ClassLoader.getSystemClassLoader();
 		URL[] urls = ((URLClassLoader) cl).getURLs();
-		for(URL url: urls){
-			if (DEBUG) {System.out.println(InitInstrument.class.getName()+".getInstrumentJar: url: "+url.getFile());}
-			if(url.toString().contains("injection") && url.toString().endsWith(".jar")){
-				if (DEBUG) {System.out.println(InitInstrument.class.getName()+".getInstrumentJar: jarFile: "+url.getFile());}
+		for (URL url : urls) {
+			if (DEBUG) {
+				System.out.println(InitInstrument.class.getName() + ".getInstrumentJar: url: " + url.getFile());
+			}
+			if (url.toString().contains("injection") && url.toString().endsWith(".jar")) {
+				if (DEBUG) {
+					System.out.println(InitInstrument.class.getName() + ".getInstrumentJar: jarFile: " + url.getFile());
+				}
 				File file = new File(url.getFile());
-				if(file.exists()){
-					if (DEBUG) {System.out.println(InitInstrument.class.getName()+".getInstrumentJar: found file: "+file.getAbsolutePath());}
+				if (file.exists()) {
+					if (DEBUG) {
+						System.out.println(InitInstrument.class.getName() + ".getInstrumentJar: found file: " + file.getAbsolutePath());
+					}
 					return file.getAbsolutePath();
 				}
 			}
 		}
-		throw new  FileNotFoundException();
+		throw new FileNotFoundException();
 	}
-	
+
 }

@@ -9,6 +9,7 @@ import static io.cb.java.injection.Agent.DEBUG;
 import io.cb.java.injection.pojo.Context;
 import io.cb.java.injection.pojo.Inject;
 import io.cb.java.injection.pojo.Named;
+import io.cb.java.injection.pojo.PojoException;
 import io.cb.java.injection.pojo.Singleton;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
@@ -71,16 +72,16 @@ public class Transformer implements ClassFileTransformer {
 		}
 		CtClass ctClass = null;
 		byte[] byteCode = null;
+		String className = fullyQualifiedClassName.replaceAll("/", "\\.");
+		if (DEBUG) {
+			System.out.println(this.getClass().getName() + ".transform: className: " + className);
+		}
 		try {
-			String className = fullyQualifiedClassName.replaceAll("/", "\\.");
-			if (DEBUG) {
-				System.out.println(this.getClass().getName() + ".transform: className: " + className);
-			}
 			ctClass = ClassPool.getDefault().get(className);
-			byteCode = transform(context,className, ctClass);
+			byteCode = transformClass(context, className, ctClass);
 		} catch (NotFoundException | ClassNotFoundException | IOException ex) {
 			if (DEBUG) {
-				System.err.println(ex);
+				System.err.println("ERR "+this.getClass().getName() + ".transform: className: " + className + ": " + ex);
 			}
 		} finally {
 			if (ctClass != null) {
@@ -90,7 +91,7 @@ public class Transformer implements ClassFileTransformer {
 		return byteCode;
 	}
 
-	private byte[] transform(Context _context, String className, CtClass ctClass) throws ClassNotFoundException, NotFoundException, IOException {
+	private byte[] transformClass(Context _context, String className, CtClass ctClass) throws ClassNotFoundException, NotFoundException, IOException {
 		boolean transform = false;
 		boolean singleton = false;
 		byte[] byteCode = null;
@@ -104,41 +105,53 @@ public class Transformer implements ClassFileTransformer {
 			}
 			String name = ctField.getName();
 			if (DEBUG) {
-				System.out.println(this.getClass().getName() + ".transform: name: " + name);
+				System.out.println(Transformer.class.getName() + ".transformClass: name: " + name);
 			}
 			if (ctField.hasAnnotation(Named.class)) {
 				Named n = (Named) ctField.getAnnotation(Named.class);
 				name = n.value();
 				if (DEBUG) {
-					System.out.println(this.getClass().getName() + ".transform: named: name: " + name);
+					System.out.println(Transformer.class.getName() + ".transformClass: named: name: " + name);
 				}
 			}
 			CtConstructor[] constructors = ctClass.getDeclaredConstructors();
 			if (DEBUG) {
-				System.out.println(this.getClass().getName() + ".transform: constructors: " + constructors.length);
+				System.out.println(Transformer.class.getName() + ".transformClass: constructors: " + constructors.length);
 			}
 			for (CtConstructor constructor : constructors) {
-				if (singleton) {
-					_context.getSingleton(name);
-				} else {
-					_context.getResource(name);
+				
+				try {
+					if (singleton) {
+						_context.getSingleton(name);
+					} else {
+						_context.getResource(name);
+					}
+				} catch (PojoException ex) {
+					System.err.println("ERR "+Transformer.class.getName() +"transformClass: className: " + className+": CannotCompileException: getResource or getSingleton failed" + ex);
+					continue;
 				}
-				String line = "this." + ctField.getName() + "= (" + ctField.getType().getName()
-						+ ")" + _context.getClass().getName() + "." + (singleton ? "getSingleton" : "getResource") + "(\"" + name + "\");";
+				String line = null;
 				if (DEBUG) {
-					System.out.println(this.getClass().getName() + ".transform: code line: " + line);
+					System.out.println(Transformer.class.getName() + ".transformClass: try to write line of code");
 				}
 				try {
+					line = "this." + ctField.getName() + "= (" + ctField.getType().getName()
+							+ ")" + Context.class.getName()
+							+ "." + "getContext(\"" + _context.getId() + "\")"
+							+ "." + (singleton ? "getSingleton" : "getResource") + "(\"" + name + "\");";
+					if (DEBUG) {
+						System.out.println(Transformer.class.getName() + ".transformClass: code line: " + line);
+					}
 					constructor.insertAfter(line);
 				} catch (Exception ex) {
-					System.err.println("transform: CannotCompileException: " + ex);
+					System.err.println("ERR "+Transformer.class.getName() +"transformClass: className: " + className + ": CannotCompileException: line of code : " + line + ", " + ex);
 				}
 			}
 			transform = true;
 		}
 		if (transform) {
 			if (DEBUG) {
-				System.out.println(this.getClass().getName() + ".transform: transformed className: " + className);
+				System.out.println(Transformer.class.getName() + ".transformClass: transformed className: " + className);
 			}
 			try {
 				byteCode = ctClass.toBytecode();
@@ -147,7 +160,7 @@ public class Transformer implements ClassFileTransformer {
 			}
 		} else {
 			if (DEBUG) {
-				System.out.println(this.getClass().getName() + ".transform: className: " + className + " not transformed");
+				System.out.println(Transformer.class.getName() + ".transformClass: className: " + className + " not transformed");
 			}
 		}
 		return byteCode;
