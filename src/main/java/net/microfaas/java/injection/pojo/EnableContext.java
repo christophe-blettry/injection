@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package io.cb.java.injection.pojo;
+package net.microfaas.java.injection.pojo;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -12,11 +12,10 @@ import java.lang.annotation.Target;
 
 /**
  *
- * @author Christophe Blettry (blech)
+ * @author christophe
  */
-@Target({ElementType.METHOD, ElementType.FIELD })
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-
-public @interface Singleton {
-	
+public @interface EnableContext {
+	String location();
 }

@@ -3,14 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package io.cb.java.injection;
+package net.microfass.java.injection;
 
-import static io.cb.java.injection.Agent.DEBUG;
-import io.cb.java.injection.pojo.Context;
-import io.cb.java.injection.pojo.Inject;
-import io.cb.java.injection.pojo.Named;
-import io.cb.java.injection.pojo.PojoException;
-import io.cb.java.injection.pojo.Singleton;
+import static net.microfass.java.injection.Agent.DEBUG;
+import net.microfaas.java.injection.pojo.Context;
+import net.microfaas.java.injection.pojo.Inject;
+import net.microfaas.java.injection.pojo.Named;
+import net.microfaas.java.injection.pojo.PojoException;
+import net.microfaas.java.injection.pojo.Singleton;
 import java.io.IOException;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;

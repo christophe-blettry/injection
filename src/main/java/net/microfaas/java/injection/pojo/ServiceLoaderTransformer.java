@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package io.cb.java.injection.pojo;
+package net.microfaas.java.injection.pojo;
 
-import static io.cb.java.injection.Agent.DEBUG;
-import io.cb.java.injection.InjectionException;
+import static net.microfass.java.injection.Agent.DEBUG;
+import net.microfass.java.injection.InjectionException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;

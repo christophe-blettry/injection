@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package io.cb.java.injection;
+package net.microfass.java.injection;
 
 import com.sun.tools.attach.VirtualMachine;
-import static io.cb.java.injection.Agent.DEBUG;
+import static net.microfass.java.injection.Agent.DEBUG;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

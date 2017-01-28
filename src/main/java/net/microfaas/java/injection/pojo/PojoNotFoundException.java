@@ -3,26 +3,26 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package io.cb.java.injection.pojo;
+package net.microfaas.java.injection.pojo;
 
 /**
  *
  * @author Christophe Blettry (blech)
  */
-public class PojoException extends RuntimeException  {
+public class PojoNotFoundException extends PojoException {
 
-	public PojoException() {
+	public PojoNotFoundException() {
 	}
 
-	public PojoException(String message) {
+	public PojoNotFoundException(String message) {
 		super(message);
 	}
 
-	public PojoException(String message, Throwable cause) {
+	public PojoNotFoundException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
-	public PojoException(Throwable cause) {
+	public PojoNotFoundException(Throwable cause) {
 		super(cause);
 	}
 

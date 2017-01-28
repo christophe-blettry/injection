@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package io.cb.java.injection.pojo;
+package net.microfaas.java.injection.pojo;
 
-import static io.cb.java.injection.Agent.DEBUG;
+import static net.microfass.java.injection.Agent.DEBUG;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
