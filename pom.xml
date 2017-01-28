@@ -51,8 +51,8 @@
 							<addClasspath>true</addClasspath>
 						</manifest>
 						<manifestEntries>
-							<Agent-Class>io.cb.java.injection.Agent</Agent-Class>
-							<Premain-Class>io.cb.java.injection.Agent</Premain-Class>
+							<Agent-Class>net.microfaas.java.injection.Agent</Agent-Class>
+							<Premain-Class>net.microfaas.java.injection.Agent</Premain-Class>
 						</manifestEntries>
 					</archive>
 				</configuration>
