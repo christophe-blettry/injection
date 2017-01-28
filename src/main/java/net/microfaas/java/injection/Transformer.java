@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package net.microfass.java.injection;
+package net.microfaas.java.injection;
 
-import static net.microfass.java.injection.Agent.DEBUG;
+import static net.microfaas.java.injection.Agent.DEBUG;
 import net.microfaas.java.injection.pojo.Context;
 import net.microfaas.java.injection.pojo.Inject;
 import net.microfaas.java.injection.pojo.Named;

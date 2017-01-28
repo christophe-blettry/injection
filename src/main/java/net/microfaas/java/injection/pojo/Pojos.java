@@ -5,7 +5,7 @@
  */
 package net.microfaas.java.injection.pojo;
 
-import static net.microfass.java.injection.Agent.DEBUG;
+import static net.microfaas.java.injection.Agent.DEBUG;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;

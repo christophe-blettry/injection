@@ -5,7 +5,7 @@
  */
 package net.microfaas.java.injection.pojo;
 
-import static net.microfass.java.injection.Agent.DEBUG;
+import static net.microfaas.java.injection.Agent.DEBUG;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
